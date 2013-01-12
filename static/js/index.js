@@ -72,6 +72,10 @@ $(function() {
         initialize: function() {
             var tmpl_selector = "#" + this.get('name') + "-editor";
             this.editor_tmpl = _.template($(tmpl_selector).html());
+
+            this.set({
+                instances: new S.InstanceCollection()
+            }, {silent: true});
         }
     });
 
@@ -81,12 +85,6 @@ $(function() {
 
     S.Concepts = new S.ConceptCollection();
 
-    S.Concepts.push(new S.Concept({
-        name: 'pages',
-        display_name: 'Pages',
-        id_field: 'url'
-    }));
-    
     S.ConceptListView = S.MView.extend({
         tagName: 'li',
         className: 'concept',
@@ -112,7 +110,7 @@ $(function() {
         postRender: function() {
             this.setSelectedClass();
         },
-        selectConcept: function() {
+        selectInstance: function() {
             S.CurrentInstance.set(this.model);
         }
     });
@@ -123,12 +121,12 @@ $(function() {
             this.render();
         },
         render: function() {
-            var self = this;
-
-            S.Concepts.each(function(c){
-                var v = new S.ConceptListView({model: c});
-                self.$el.append(v.render().el);
-            });
+            this.$el.empty();
+            S.Concepts.each(_.bind(this.renderOne, this));
+        },
+        renderOne: function(c) {
+            var v = new S.ConceptListView({model: c});
+            this.$el.append(v.render().el);
         }
     });
 
@@ -138,13 +136,14 @@ $(function() {
             S.CurrentConcept.bind('change', this.render, this);
         },
         render: function() {
-            var self = this;
+            this.$el.empty();
             var concept = S.CurrentConcept.get();
-
-            Instances.each(function(c){
-                var v = new S.InstanceListView({model: c});
-                self.$el.append(v.render().el);
-            });
+            console.log(concept.toJSON());
+            concept.get('instances').each(_.bind(this.renderOne, this));
+        },
+        renderOne: function(c) {
+            var v = new S.InstanceListView({model: c});
+            this.$el.append(v.render().el);
         }
     });
 
@@ -160,13 +159,29 @@ $(function() {
             });
 
             concept.get('instances').push(instance);
+            S.TheInstanceList.renderOne(instance);
             return false;
         }
     });
 
-    new S.ConceptList();
-    new S.InstanceList();
-    new S.AddInstanceLink();
+    S.Concepts.reset([
+        new S.Concept({
+            name: 'pages',
+            display_name: 'Pages',
+            id_field: 'url'
+        }),
+        new S.Concept({
+            name: 'partials',
+            display_name: 'Partials',
+            id_field: 'name'
+        })
+    ]);
+
+    S.TheConceptList = new S.ConceptList();
+    S.TheInstanceList = new S.InstanceList();
+    S.TheAddInstanceLink = new S.AddInstanceLink();
+    
+    S.CurrentConcept.set(S.Concepts.at(0));
 
     window.S = S;
 });
