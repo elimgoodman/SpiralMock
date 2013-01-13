@@ -3,6 +3,7 @@
         <script type="text/javascript" src="/static/js/jquery.js"></script>
         <script type="text/javascript" src="/static/js/underscore.js"></script>
         <script type="text/javascript" src="/static/js/backbone.js"></script>
+        <script type="text/javascript" src="/static/js/loader.js"></script>
         <script type="text/javascript" src="/static/js/index.js"></script>
         <link rel="stylesheet" type="text/css" href="/static/css/index.css" />
     </head>
@@ -10,6 +11,7 @@
         <ul id="concept-list"></ul>
         <hr />
         <ul id="instance-list"></ul>
+        <div id="editor"></div>
         <a href="#" id="add-instance-link">Add</a>
     </body>
 
@@ -22,10 +24,16 @@
     </script>
 
     <script type="text/html" id="pages-editor">
-        <h1>Hello world</h1>
+        <ul>
+            <li>URL: <input class='url' name="url"/></li>
+            <li>Body: <textarea class='body' name="body" /></textarea></li>
+        </ul>
     </script>
 
     <script type="text/html" id="partials-editor">
-        Goodbye
+        <ul>
+            <li>Name: <input class='name'/></li>
+            <li>Body: <textarea class='body'/></textarea></li>
+        </ul>
     </script>
 </html>

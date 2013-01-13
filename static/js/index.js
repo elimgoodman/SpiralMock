@@ -61,6 +61,16 @@ $(function() {
     S.Instance = Backbone.Model.extend({
         defaults: {
             values: {}
+        },
+        initialize: function() {
+            var values = {};
+
+            var concept = this.get('parent');
+            _.each(concept.get('fields'), function(field){
+                values[field] = null;
+            });
+
+            this.set({values: values}, {silent: true});
         }
     });
 
@@ -69,6 +79,10 @@ $(function() {
     });
 
     S.Concept = Backbone.Model.extend({
+        defaults: {
+            editor_js: [],
+            editor_css: []
+        },
         initialize: function() {
             var tmpl_selector = "#" + this.get('name') + "-editor";
             this.editor_tmpl = _.template($(tmpl_selector).html());
@@ -138,7 +152,6 @@ $(function() {
         render: function() {
             this.$el.empty();
             var concept = S.CurrentConcept.get();
-            console.log(concept.toJSON());
             concept.get('instances').each(_.bind(this.renderOne, this));
         },
         renderOne: function(c) {
@@ -164,24 +177,98 @@ $(function() {
         }
     });
 
-    S.Concepts.reset([
-        new S.Concept({
-            name: 'pages',
-            display_name: 'Pages',
-            id_field: 'url'
-        }),
-        new S.Concept({
-            name: 'partials',
-            display_name: 'Partials',
-            id_field: 'name'
-        })
-    ]);
+    S.Editor = Backbone.View.extend({
+        el: $("#editor"),
+        initialize: function() {
+            S.CurrentInstance.bind('change', this.render, this);
+            this.loader = new Loader();
+        },
+        render: function() {
+            var self = this;
+
+            var instance = S.CurrentInstance.get();
+            var concept = instance.get('parent');
+
+            var editor_html = $(concept.editor_tmpl(instance.get('values')));
+
+            this.$el.html(editor_html);
+            this.loader.load({
+                js: concept.get('editor_js'),
+                css: concept.get('editor_css')
+            }, function() {
+                concept.get('load')(self.$el, instance.get('values'));
+            });
+
+            $('textarea, input').keyup(function(e){
+                self.save();
+            });
+        },
+        save: function() {
+            var instance = S.CurrentInstance.get();
+            var concept = instance.get('parent');
+            var values = concept.get('save')(this.$el);
+            instance.set({values: values});
+        }
+    });
+    
+    var pages = new S.Concept({
+        name: 'pages',
+        display_name: 'Pages',
+        id_field: 'url',
+        fields: ['url', 'body'],
+        editor_js: ["/static/js/codemirror.js", "/static/js/mode/xml.js"],
+        editor_css: ["/static/css/codemirror.css"],
+        load: function(root, values) {
+            root.find('.url').val(values.url);
+
+            this.foo = "bar";
+
+            var body = root.find('.body');
+            body.val(values.body);
+
+            //Setting attributes on 'this' probably isn't great...
+            this.cm = CodeMirror.fromTextArea(body.get(0), {
+                mode: 'xml',
+                lineNumbers: true,
+                onKeyEvent: function (ed, ev) {
+                    S.TheEditor.save();
+                }
+            });
+        },
+        save: function(root) {
+            return {
+                url: root.find('.url').val(),
+                body: this.cm.getValue()
+            };
+        }
+    });
+
+    var partials = new S.Concept({
+        name: 'partials',
+        display_name: 'Partials',
+        id_field: 'name',
+        fields: ['name', 'body'],
+        load: function(root, values) {
+            root.find('.name').val(values.name);
+            root.find('.body').val(values.body);
+        },
+        save: function(root) {
+            return {
+                name: root.find('.name').val(),
+                body: root.find('.body').val()
+            };
+        }
+    });
+
+    S.Concepts.reset([pages, partials]);
 
     S.TheConceptList = new S.ConceptList();
     S.TheInstanceList = new S.InstanceList();
     S.TheAddInstanceLink = new S.AddInstanceLink();
+    S.TheEditor = new S.Editor();
     
     S.CurrentConcept.set(S.Concepts.at(0));
+    S.TheAddInstanceLink.addInstance();
 
     window.S = S;
 });
