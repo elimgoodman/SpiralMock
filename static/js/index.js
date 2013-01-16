@@ -81,7 +81,8 @@ $(function() {
     S.Concept = Backbone.Model.extend({
         defaults: {
             editor_js: [],
-            editor_css: []
+            editor_css: [],
+            css_rules: {}
         },
         initialize: function() {
             var tmpl_selector = "#" + this.get('name') + "-editor";
@@ -165,7 +166,11 @@ $(function() {
         events: {
             'click': 'addInstance'
         },
-        addInstance: function() {
+        addInstance: function(e) {
+            if(e != undefined) {
+                e.preventDefault();
+            }
+
             var concept = S.CurrentConcept.get();
             var instance = new S.Instance({
                 parent: concept
@@ -173,7 +178,7 @@ $(function() {
 
             concept.get('instances').push(instance);
             S.TheInstanceList.renderOne(instance);
-            return false;
+            return instance;
         }
     });
 
@@ -199,9 +204,31 @@ $(function() {
                 concept.get('load')(self.$el, instance.get('values'));
             });
 
+            var css = this.serializeCSSRules(concept.get('css_rules'));
+            this.appendCSSBlock(css);
+
             $('textarea, input').keyup(function(e){
                 self.save();
             });
+        },
+        serializeCSSRules: function(rules) {
+            var output = "";
+            _.each(rules, function(styles, selector) {
+                output += selector + " {";
+                
+                _.each(styles, function(val, key){
+                    output += key + ": " + val + ";";
+                });
+
+                output += "} ";
+            });
+
+            return output;
+        },
+        appendCSSBlock: function(css) {
+            var block = $("<style>");
+            block.html(css);
+            this.$el.append(block);
         },
         save: function() {
             var instance = S.CurrentInstance.get();
@@ -210,7 +237,33 @@ $(function() {
             instance.set({values: values});
         }
     });
+
+    var models = new S.Concept({
+        name: 'models',
+        display_name: 'Models',
+        id_field: 'name',
+        fields: ['name', 'fields', 'views', 'methods'],
+        editor_js: ["/static/js/codemirror.js", "/static/js/mode/xml.js"],
+        editor_css: ["/static/css/codemirror.css"],
+        css_rules: {
+            ".section": {
+                "display": "none"
+            }
+        },
+        load: function(root, values) {
+            root.find('.tab').click(function(e){
+                var klass = $(this).attr('href');
+                root.find('.section').hide();
+                root.find('.' + klass).show();
+
+                e.preventDefault();
+            });
+        },
+        save: function(root) {
+        }
+    });
     
+
     var pages = new S.Concept({
         name: 'pages',
         display_name: 'Pages',
@@ -260,7 +313,7 @@ $(function() {
         }
     });
 
-    S.Concepts.reset([pages, partials]);
+    S.Concepts.reset([models, pages, partials]);
 
     S.TheConceptList = new S.ConceptList();
     S.TheInstanceList = new S.InstanceList();
@@ -268,7 +321,8 @@ $(function() {
     S.TheEditor = new S.Editor();
     
     S.CurrentConcept.set(S.Concepts.at(0));
-    S.TheAddInstanceLink.addInstance();
+    instance = S.TheAddInstanceLink.addInstance();
+    S.CurrentInstance.set(instance);
 
     window.S = S;
 });
