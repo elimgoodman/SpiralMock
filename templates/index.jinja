@@ -46,10 +46,34 @@
 
         <div class="structure section">
             Name: <input class="name" />
+            <div>
+                Fields:
+                <ul class="field-list">
+                </ul>
+                <a href='#' class="add-field-link">+ Add Field</a>
+            </div>
+
+            <li class="field-template template">
+                Name: <input class="field-name" />
+                Type:
+                <select>
+                    <option value="int">Int</option>
+                    <option value="string">String</option>
+                    <option value="bool">Bool</option>
+                </select>
+            </li>
         </div>
 
         <div class="methods section">
-            Foo: <input class="name" />
+            <ul class="method-list">
+            </ul>
+
+            <a href='#' class="add-method-link">+ Add Method</a>
+
+            <li class="method-template template">
+                Name: <input class="method-name" />
+                Body: <textarea></textarea>
+            </li>
         </div>
     </script>
 </html>

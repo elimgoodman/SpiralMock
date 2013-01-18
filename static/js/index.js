@@ -3,9 +3,14 @@ $(function() {
     
     S.SelectionKeeper = function () {
         this.selected = null;
+        this.prechange = null;
     };
     _.extend(S.SelectionKeeper.prototype, Backbone.Events, {
         set: function (selected) {
+            if(this.selected && this.prechange) {
+                this.prechange();
+            }
+
             if(this.selected) {
                 this.selected.set({
                     selected: false
@@ -24,6 +29,10 @@ $(function() {
 
     S.CurrentConcept = new S.SelectionKeeper();
     S.CurrentInstance = new S.SelectionKeeper();
+    
+    S.CurrentInstance.prechange = function() {
+        S.TheEditor.save();
+    }
 
     S.MView = Backbone.View.extend({
         render: function() {
@@ -206,10 +215,6 @@ $(function() {
 
             var css = this.serializeCSSRules(concept.get('css_rules'));
             this.appendCSSBlock(css);
-
-            $('textarea, input').keyup(function(e){
-                self.save();
-            });
         },
         serializeCSSRules: function(rules) {
             var output = "";
@@ -248,6 +253,9 @@ $(function() {
         css_rules: {
             ".section": {
                 "display": "none"
+            },
+            ".template": {
+                "display": "none"
             }
         },
         load: function(root, values) {
@@ -255,6 +263,27 @@ $(function() {
                 var klass = $(this).attr('href');
                 root.find('.section').hide();
                 root.find('.' + klass).show();
+
+                e.preventDefault();
+            });
+
+            var field_list = root.find(".field-list");
+            var method_list = root.find(".method-list");
+            var field_template = root.find(".field-template");
+            var method_template = root.find(".method-template");
+
+            root.find('.add-field-link').click(function(e){
+                var new_field = field_template.clone();
+                new_field.removeClass('template');
+                field_list.append(new_field);
+
+                e.preventDefault();
+            });
+
+            root.find('.add-method-link').click(function(e){
+                var new_field = method_template.clone();
+                new_field.removeClass('template');
+                method_list.append(new_field);
 
                 e.preventDefault();
             });
@@ -279,13 +308,10 @@ $(function() {
             var body = root.find('.body');
             body.val(values.body);
 
-            //Setting attributes on 'this' probably isn't great...
+            //FIXME: Setting attributes on 'this' probably isn't great...
             this.cm = CodeMirror.fromTextArea(body.get(0), {
                 mode: 'xml',
-                lineNumbers: true,
-                onKeyEvent: function (ed, ev) {
-                    S.TheEditor.save();
-                }
+                lineNumbers: true
             });
         },
         save: function(root) {
