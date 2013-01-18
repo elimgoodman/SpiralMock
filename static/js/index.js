@@ -248,7 +248,7 @@ $(function() {
         display_name: 'Models',
         id_field: 'name',
         fields: ['name', 'fields', 'views', 'methods'],
-        editor_js: ["/static/js/codemirror.js", "/static/js/mode/xml.js"],
+        editor_js: ["/static/js/codemirror.js", "/static/js/mode/xml.js", "/static/js/mode/javascript.js"],
         editor_css: ["/static/css/codemirror.css"],
         css_rules: {
             ".section": {
@@ -285,6 +285,10 @@ $(function() {
                 new_field.removeClass('template');
                 method_list.append(new_field);
 
+                this.cm = CodeMirror.fromTextArea(new_field.find('.method-body').get(0), {
+                    mode: 'javascript',
+                    lineNumbers: true
+                });
                 e.preventDefault();
             });
         },
