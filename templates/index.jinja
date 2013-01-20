@@ -26,7 +26,15 @@
     <script type="text/html" id="pages-editor">
         <ul>
             <li>URL: <input class='url' name="url"/></li>
+            <li>Layout: <select class="layout"></select>
             <li>Body: <textarea class='body' name="body" /></textarea></li>
+        </ul>
+    </script>
+
+    <script type="text/html" id="layouts-editor">
+        <ul>
+            <li>Name: <input class='name'/></li>
+            <li>Body: <textarea class='body'/></textarea></li>
         </ul>
     </script>
 
@@ -54,13 +62,17 @@
             </div>
 
             <li class="field-template template">
-                Name: <input class="field-name" />
-                Type:
-                <select>
-                    <option value="int">Int</option>
-                    <option value="string">String</option>
-                    <option value="bool">Bool</option>
-                </select>
+                <ul>
+                    <li>Name: <input class="field-name" /></li>
+                    <li>
+                    Type:
+                        <select>
+                            <option value="int">Int</option>
+                            <option value="string">String</option>
+                            <option value="bool">Bool</option>
+                        </select>
+                    </li>
+                <ul>
             </li>
         </div>
 
@@ -71,8 +83,15 @@
             <a href='#' class="add-method-link">+ Add Method</a>
 
             <li class="method-template template">
-                Name: <input class="method-name" />
-                Body: <textarea class="method-body"></textarea>
+                <ul>
+                    <li>Name: <input class="method-name" /></li>
+                    <li>
+                        Params:
+                        <ul class="param-list"></ul>
+                        <a href="#" class="add-param-link">+ Add Param</a>
+                    </li>
+                    <li>Body: <textarea class="method-body"></textarea></li>
+                </ul>
             </li>
         </div>
     </script>

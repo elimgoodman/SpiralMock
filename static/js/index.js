@@ -75,9 +75,12 @@ $(function() {
             var values = {};
 
             var concept = this.get('parent');
+            var null_vals = {};
             _.each(concept.get('fields'), function(field){
-                values[field] = null;
+                null_vals[field] = null;
             });
+
+            var values = _.extend(null_vals, this.get('values'));
 
             this.set({values: values}, {silent: true});
         }
@@ -97,9 +100,11 @@ $(function() {
             var tmpl_selector = "#" + this.get('name') + "-editor";
             this.editor_tmpl = _.template($(tmpl_selector).html());
 
-            this.set({
-                instances: new S.InstanceCollection()
-            }, {silent: true});
+            if(this.get('instances') == undefined) {
+                this.set({
+                    instances: new S.InstanceCollection()
+                }, {silent: true});
+            }
         }
     });
 
@@ -187,6 +192,7 @@ $(function() {
 
             concept.get('instances').push(instance);
             S.TheInstanceList.renderOne(instance);
+            S.CurrentInstance.set(instance);
             return instance;
         }
     });
@@ -243,74 +249,33 @@ $(function() {
         }
     });
 
-    var models = new S.Concept({
-        name: 'models',
-        display_name: 'Models',
-        id_field: 'name',
-        fields: ['name', 'fields', 'views', 'methods'],
-        editor_js: ["/static/js/codemirror.js", "/static/js/mode/xml.js", "/static/js/mode/javascript.js"],
-        editor_css: ["/static/css/codemirror.css"],
-        css_rules: {
-            ".section": {
-                "display": "none"
-            },
-            ".template": {
-                "display": "none"
-            }
-        },
-        load: function(root, values) {
-            root.find('.tab').click(function(e){
-                var klass = $(this).attr('href');
-                root.find('.section').hide();
-                root.find('.' + klass).show();
-
-                e.preventDefault();
-            });
-
-            var field_list = root.find(".field-list");
-            var method_list = root.find(".method-list");
-            var field_template = root.find(".field-template");
-            var method_template = root.find(".method-template");
-
-            root.find('.add-field-link').click(function(e){
-                var new_field = field_template.clone();
-                new_field.removeClass('template');
-                field_list.append(new_field);
-
-                e.preventDefault();
-            });
-
-            root.find('.add-method-link').click(function(e){
-                var new_field = method_template.clone();
-                new_field.removeClass('template');
-                method_list.append(new_field);
-
-                this.cm = CodeMirror.fromTextArea(new_field.find('.method-body').get(0), {
-                    mode: 'javascript',
-                    lineNumbers: true
-                });
-                e.preventDefault();
-            });
-        },
-        save: function(root) {
-        }
-    });
-    
-
     var pages = new S.Concept({
         name: 'pages',
         display_name: 'Pages',
         id_field: 'url',
-        fields: ['url', 'body'],
+        fields: ['url', 'body', 'layout'],
         editor_js: ["/static/js/codemirror.js", "/static/js/mode/xml.js"],
         editor_css: ["/static/css/codemirror.css"],
         load: function(root, values) {
             root.find('.url').val(values.url);
 
-            this.foo = "bar";
-
             var body = root.find('.body');
             body.val(values.body);
+            
+            var layout_select = root.find('.layout');
+
+            S.Concepts.find(function(c){
+                return c.get('name') == 'layouts';
+            }).get('instances').each(function(i){
+                var name = i.get('values')['name'];
+                var option = $("<option>").attr('value', name).html(name);
+                
+                if(values.layout == name) {
+                    option.attr('selected', true);
+                }
+
+                layout_select.append(option);
+            });
 
             //FIXME: Setting attributes on 'this' probably isn't great...
             this.cm = CodeMirror.fromTextArea(body.get(0), {
@@ -321,10 +286,45 @@ $(function() {
         save: function(root) {
             return {
                 url: root.find('.url').val(),
-                body: this.cm.getValue()
+                body: this.cm.getValue(),
+                layout: root.find('.layout').val()
             };
         }
     });
+
+    var layouts = new S.Concept({
+        name: 'layouts',
+        display_name: 'Layouts',
+        id_field: 'name',
+        fields: ['name', 'body'],
+        editor_js: ["/static/js/codemirror.js", "/static/js/mode/xml.js"],
+        editor_css: ["/static/css/codemirror.css"],
+        load: function(root, values) {
+            root.find('.name').val(values.name);
+
+            var body = root.find('.body');
+            body.val(values.body);
+
+            this.cm = CodeMirror.fromTextArea(body.get(0), {
+                mode: 'xml',
+                lineNumbers: true
+            });
+        },
+        save: function(root) {
+            return {
+                name: root.find('.name').val(),
+                body: this.cm.getValue(),
+            };
+        },
+    });
+    
+    layouts.get('instances').push(new S.Instance({
+        parent: layouts,
+        values: {
+            name: 'default_page',
+            body: '<div id="content"><%= content %></div>'
+        }
+    }));
 
     var partials = new S.Concept({
         name: 'partials',
@@ -343,7 +343,7 @@ $(function() {
         }
     });
 
-    S.Concepts.reset([models, pages, partials]);
+    S.Concepts.reset([layouts, pages, partials]);
 
     S.TheConceptList = new S.ConceptList();
     S.TheInstanceList = new S.InstanceList();
@@ -351,8 +351,7 @@ $(function() {
     S.TheEditor = new S.Editor();
     
     S.CurrentConcept.set(S.Concepts.at(0));
-    instance = S.TheAddInstanceLink.addInstance();
-    S.CurrentInstance.set(instance);
+    //instance = S.TheAddInstanceLink.addInstance();
 
     window.S = S;
 });

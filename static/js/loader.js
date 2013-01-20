@@ -11,9 +11,13 @@
             var total_files = files.js.length + files.css.length;
             var loaded_files = 0;
             
+            if(total_files == 0) {
+                return cb();
+            }
+
             var file_loaded = function() {
                 loaded_files++;
-
+                
                 if(loaded_files == total_files) {
                     cb();
                 }
